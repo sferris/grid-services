@@ -1,0 +1,7 @@
+GRID_HOME=/u01/product/grid/linux-x64-19.8.0.0.200714-grid/bin/appvipcfg
+
+"${GRID_HOME}"/bin/appvipcfg delete -vipname=rac01d-git.vip -force
+"${GRID_HOME}"/bin/appvipcfg create -vipname=rac01d-git.vip -network=1 -ip=192.168.21.158 -user=git -group=git
+
+"${GRID_HOME}"/bin/crsctl delete resource rac01d-git.svc -f
+"${GRID_HOME}"/bin/crsctl add resource rac01d-git.svc -type cluster_resource -file ../etc/gitea.resource

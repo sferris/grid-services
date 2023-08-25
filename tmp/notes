@@ -1,0 +1,161 @@
+#
+## Install OCFS2
+#
+sudo dnf install -y ocfs2-tools
+
+sudo o2cb add-cluster racocfs01d
+
+sudo o2cb add-node racocfs01d srvoel10a --ip 10.0.20.17
+sudo o2cb add-node racocfs01d srvoel10b --ip 10.0.20.18
+
+sudo cat /etc/ocfs2/cluster.conf
+cluster:
+	heartbeat_mode = local
+	node_count = 2
+	name = racocfs01d
+
+node:
+	number = 0
+	cluster = racocfs01d
+	ip_port = 7777
+	ip_address = 10.0.20.17
+	name = srvoel10a
+
+node:
+	number = 1
+	cluster = racocfs01d
+	ip_port = 7777
+	ip_address = 10.0.20.18
+	name = srvoel10b
+
+sudo /sbin/o2cb.init configure
+
+sudo systemctl enable o2cb
+sudo systemctl start o2cb
+
+sudo systemctl enable ocfs2
+sudo systemctl start ocfs2
+
+sudo mkfs.ocfs2 -L “ocfs2” /dev/oracle/ocfs2/6000000000000000000000000000f001-gitrepo 
+
+sudo cat /etc/fstab
+/dev/oracle/ocfs2/6000000000000000000000000000f001-gitrepo  /ocfs/gitea ocfs2 _netdev 0 0
+----
+
+#
+## Install gitea
+#
+sudo groupadd  --system git
+sudo useradd --home-dir /home/git --gid git --create-home --system --shell /bin/bash --comment 'Gitea repository admin' git
+sudo loginctl enable-linger git
+
+sudo setcap 'cap_net_bind_service=+ep' /home/git/bin/gitea-1.20.3-linux-amd64
+
+#> as git
+rootdir=/ocfs/gitea
+
+mkdir -p "${rootdir}"/{custom,data,log,etc}
+chown -R git:git "${rootdir}"/
+chmod -R 750 "${rootdir}"
+chmod 770 "${rootdir}"/etc
+
+mkdir -p ~/.config/systemd/user
+
+# This should not start on it's own.. It'll be managed by the cluster
+cat ~/.config/systemd/user/gitea.service 
+[Unit]
+Description=Gitea (Git with a cup of tea)
+After=network.target
+
+[Service]
+# Uncomment the next line if you have repos with lots of files and get a HTTP 500 error because of that
+# LimitNOFILE=524288:524288
+
+# RAC will manage start/stop/relocation
+Restart=no
+Type=exec
+
+WorkingDirectory=/ocfs/gitea/
+ExecStart=/home/git/bin/gitea web --config /ocfs/gitea/etc/app.ini
+Environment=USER=git HOME=/home/git GITEA_WORK_DIR=/ocfs/gitea
+
+#[Install]
+#WantedBy=default.target
+----
+
+cat /home/git/bin/gitea.resource
+ACL=owner:git:rwx,pgrp:git:r-x,other::r--
+ACTION_SCRIPT=/home/git/bin/gitea.grid
+ACTION_TIMEOUT=180
+AUTO_START=always
+SCRIPT_TIMEOUT=180
+CHECK_INTERVAL=300
+STOP_DEPENDENCIES=hard(intermediate:rac01d-git.vip)
+START_DEPENDENCIES=hard(rac01d-git.vip) attraction(intermediate:rac01d-git.vip)
+----
+#!/bin/bash
+XDG_RUNTIME_DIR="/run/user/$UID"
+export XDG_RUNTIME_DIR
+
+cat /home/git/bin/gitea.grid
+start() {
+  local ret
+  printf "%s@%s: gitea starting\n" "${dt}" "${user}"
+
+  systemctl --user start gitea.service && ret=0
+
+  sleep 2
+
+  return ${ret:-1}
+}
+
+stop() {
+  local ret
+  printf "%s@%s: gitea stopping\n" "${dt}" "${user}"
+
+  systemctl --user stop gitea.service && ret=0
+  sleep 2
+
+  return ${ret:-1}
+}
+
+check() {
+  local ret
+  printf "%s@%s: gitea checking\n" "${dt}" "${user}"
+
+  systemctl --user is-active --quiet gitea.service && ret=0
+
+  return ${ret:-1};
+}
+
+clean() {
+  printf "%s@%s: gitea cleaning\n" "${dt}" "${user}"
+
+  systemctl --user stop gitea.service --force && ret=0
+  sleep 2
+
+  return ${ret:-1}
+}
+
+case "${1}" in
+  'start') start; exit $?;;
+   'stop') stop; exit $?;;
+  'check') check; exit $?;;
+  'clean') clean; exit $?;;
+esac
+----
+
+#
+## Install grid resource
+#
+export GH=/u01/product/grid/linux-x64-19.8.0.0.200714-grid/bin
+
+sudo sudo $GH/bin/appvipcfg delete -vipname=rac01d-git.vip
+sudo $GH/bin/crsctl delete resource rac01d-git.svc
+
+sudo sudo $GH/bin/appvipcfg create -vipname=rac01d-git.vip -network=1 -ip=192.168.21.158 -user=git -group=git
+sudo $GH/bin/crsctl add resource rac01d-git.svc -type cluster_resource -file /home/git/bin/gitea.resource
+
+/u01/product/grid/linux-x64-19.8.0.0.200714-grid/bin/crsctl start   res rac01d-git.svc
+/u01/product/grid/linux-x64-19.8.0.0.200714-grid/bin/crsctl stop    res rac01d-git.svc
+/u01/product/grid/linux-x64-19.8.0.0.200714-grid/bin/crsctl reloate res rac01d-git.svc

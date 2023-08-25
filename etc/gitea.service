@@ -1,0 +1,23 @@
+[Unit]
+Description=Gitea (Git with a cup of tea)
+After=network.target
+
+[Service]
+# Uncomment the next line if you have repos with lots of files and get a HTTP 500 error because of that
+# LimitNOFILE=524288:524288
+#Type=notify
+Type=exec
+#User=git
+#Group=git
+WorkingDirectory=/ocfs/gitea/
+
+ExecStart=/home/git/bin/gitea web --config /ocfs/gitea/etc/app.ini
+Restart=no
+Environment=USER=git HOME=/home/git GITEA_WORK_DIR=/ocfs/gitea
+
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
+#PrivateUsers=false
+
+[Install]
+WantedBy=default.target

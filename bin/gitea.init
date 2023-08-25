@@ -1,0 +1,56 @@
+#!/bin/bash
+
+XDG_RUNTIME_DIR="/run/user/$UID"
+export XDG_RUNTIME_DIR
+
+read dt < <(date +'%m%d%Y-%H%M%S')
+read node < <(uname -n)
+read user < <((/opt/csw/bin/gid -u -n || /usr/xpg4/bin/id -u -n || id -u -n) 2>/dev/null)
+
+#exec >> /home/git/log/gitea.log 2>&1
+
+start() {
+  local ret
+  printf "%s@%s: gitea starting\n" "${dt}" "${user}"
+
+  systemctl --user start gitea.service && ret=0
+
+  sleep 2
+
+  return ${ret:-1}
+}
+
+stop() {
+  local ret
+  printf "%s@%s: gitea stopping\n" "${dt}" "${user}"
+
+  systemctl --user stop gitea.service && ret=0
+  sleep 2
+
+  return ${ret:-1}
+}
+
+check() {
+  local ret
+  printf "%s@%s: gitea checking\n" "${dt}" "${user}"
+
+  systemctl --user is-active --quiet gitea.service && ret=0
+
+  return ${ret:-1};
+}
+
+clean() {
+  printf "%s@%s: gitea cleaning\n" "${dt}" "${user}"
+
+  systemctl --user stop gitea.service --force && ret=0
+  sleep 2
+
+  return ${ret:-1}
+}
+
+case "${1}" in
+  'start') start; exit $?;;
+   'stop') stop; exit $?;;
+  'check') check; exit $?;;
+  'clean') clean; exit $?;;
+esac

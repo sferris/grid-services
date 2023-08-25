@@ -1,0 +1,8 @@
+gitearoot=/ocfs/gitea
+
+mkdir -p "${gitearoot}"/{custom,data,log,etc}
+chown -R git:git "${gitearoot}"/
+chmod -R 750 "${gitearoot}"
+chmod 770 "${gitearoot}"/etc
+
+mkdir -p ~/.config/systemd/user/
