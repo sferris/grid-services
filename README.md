@@ -1,4 +1,8 @@
 # Manage external services with Oracle RAC
+
+**Warning**: My environment is not high volume, but lots of clients. This has definitely not been stress tested, and 
+doing this with Gitea is likely ill advised. (I have really good backups - just in case)
+
 I wanted a semi-highly available Gitea installation. My design considerations are:
 
 > Real Application Clusters to manage fail-over
@@ -20,7 +24,6 @@ This also a provides a good backup plan if RAC goes down. Just enable restart an
 > Gitea should run under the git user
 
 I don't want to have gitea running as root. I do want gitea to manage ssh vs. the system OS and also use port 22. The OS will be limited to the main interface, and we'll have to set up the gitea executable with cap_net_bind_service privileges.
-
 
 ## Install the clustered filesystem
 
