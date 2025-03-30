@@ -1,4 +1,4 @@
-# Manage external services with Oracle RAC
+# Manage external services using Oracle RAC (Oracle grid infrastructure)
 
 **Warning**: My environment is not high volume, but lots of clients. This has definitely not been stress tested, and 
 doing this with Gitea is likely ill advised. (I have really good backups - just in case)
@@ -7,7 +7,7 @@ I wanted a semi-highly available Gitea installation. My design considerations ar
 
 > Real Application Clusters to manage fail-over
 
-I know RAC clusters reasonably well and I manage many of them. There might be better options, but this is a free option. (It only incurs a cost if enabling RAC in a database itself) We'll use an application specific VIP (Virtual IP) that will float between cluster nodes. RAC will manage them both.
+I know RAC clusters reasonably well and I manage many of them. There might be better options, but this is a free option. (It only incurs a cost if enabling RAC in a database itself) We'll use an application specific VIP (Virtual IP) that will float between cluster nodes. RAC will manage them both. This guide requires a working Oracle RAC environment.
 
 > Clustered filesystems
 
@@ -92,12 +92,12 @@ sudo cat /etc/fstab
 /dev/oracle/ocfs2/6000000000000000000000000000f001-gitrepo  /ocfs/gitea ocfs2 _netdev 0 0
 ```
 
-The ''_netdev'' option is required to make sure it mounts after the network is started. (Mandatory for iSCSI LUNs as in me test, but I believe this resolves the timing issue on Fiber Channel LUNs too. (I still need to test)
+The ''_netdev'' option is required to make sure it mounts after the network is started. (Mandatory for iSCSI LUNs as in my test, but I believe this resolves the timing issue on Fiber Channel LUNs too. (I still need to test)
 
 
 ## Create a git user
 
-Since we'll be installing gitea manaully, we need to set up the git account manually. There's nothing hugely special about this, with the exception of use the ''cap_net_bind_service'' capability, and to manage systemd user services.
+Since we'll be installing gitea manaully, we need to set up the git account manually. There's nothing really special about this, with the exception of use the ''cap_net_bind_service'' capability, which allows non-privileged users to bind to privileged ports. We'll also leverage systemd user services to manage the gitea startup/shutdown.
 
 ### The following requires a user with sudo privs
 
