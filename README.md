@@ -11,15 +11,15 @@ I know RAC clusters reasonably well and I manage many of them. There might be be
 
 > Clustered filesystems
 
-Both ACFS and GFS2 feel very heavy. And ACFS requires pairing Kernel version with RAC version. This means RAC must be upgraded with the OS, or you risk ACFS not starting. I've used OCFS2 in the past, and it's very simple to set up. It's also included with the OS and automatically patched. The down side is that you're basically building 2 clusters. I've not had any issues with this. (One didn't step on the other)
+Both ACFS and GFS2 feel very heavy. And ACFS requires pairing Kernel version with RAC version. This means RAC must be upgraded with the OS, or you risk ACFS not starting. I've used OCFS2 in the past, and it's very simple to set up. It's also included with the OS and automatically patched. The down side is that you're basically layering cluster technologies. I've not had any issues with this. (neither step on the other)
 
 I also want protection against a non-clustered filesystem from being dual mounted and corrupting itself. Clustered filesystems mitigate these problems with a distrubuted lock manager. We should only be accessing the filesystem from a single server at any point in time, but it shouldn't be catastrophic if something does happen. However, we still need to make sure gitea is only started on at most one system. (The combination of RAC and systemd should prevent this w/o re-inventing the wheel)
 
 > Use systemd user services to start and stop
 
-This avoids a lot of complicated code to ensure things are started and running correctly. No lock files, no `ps -ef` logic (w/ false positives/negatives), etc. We'll set `restart=no` to prevent systemd from restarting it, and also leave it disabled so that it doesn't start automatically. Having RAC manage the start/stop has the added bonus of managing a vip, and knowing when there are network issues.
+This avoids a lot of complicated code to ensure things are started and running correctly. No lock files, no `ps -ef` logic (w/ potential false positives/negatives), etc. We'll set `restart=no` to prevent systemd from restarting it, and also leave it disabled so that it doesn't start automatically. Having RAC manage the start/stop has the added bonus of managing a vip, and knowing when there are network issues.
 
-This also a provides a good backup plan if RAC goes down. Just enable restart and enable/start the service manually. You lose fail-over, but should be up and running in seconds. Oh, and did I mentioned there's no special logic that make assumptions of the environment that things are running in. (the systemd scripts don't know RAC exists, and aside from RAC calling systemctl, it doesn't know about systemd)
+This also a provides a good backup plan if RAC goes down. Just enable restart and enable/start the service manually. You lose fail-over, but should be up and running in seconds. Oh, and did I mention there's no special logic that make assumptions of the environment that things are running in. (the systemd scripts don't know RAC exists, and aside from RAC calling systemctl, it doesn't know about systemd)
 
 > Gitea should run under the git user
 
