@@ -34,14 +34,14 @@ sudo dnf install -y ocfs2-tools
 
 Create the cluster configuration:
 ```
-sudo o2cb add-cluster racocfs01d
+sudo o2cb add-cluster ocfs01d
 ```
 
 Add the servers that will participate in the cluster. Yes, this is redundant because RAC is a cluster, but trust me, this is simpler than ACFS and GFS2.
 
 ```
-sudo o2cb add-node racocfs01d srvoel10a --ip 10.0.20.17
-sudo o2cb add-node racocfs01d srvoel10b --ip 10.0.20.18
+sudo o2cb add-node ocfs01d srvoel10a --ip 10.0.20.17
+sudo o2cb add-node ocfs01d srvoel10b --ip 10.0.20.18
 ```
 
 You should end up with something like this:
@@ -50,18 +50,18 @@ sudo cat /etc/ocfs2/cluster.conf
 cluster:
 	heartbeat_mode = local
 	node_count = 2
-	name = racocfs01d
+	name = ocfs01d
 
 node:
 	number = 0
-	cluster = racocfs01d
+	cluster = ocfs01d
 	ip_port = 7777
 	ip_address = 10.0.20.17
 	name = srvoel10a
 
 node:
 	number = 1
-	cluster = racocfs01d
+	cluster = ocfs01d
 	ip_port = 7777
 	ip_address = 10.0.20.18
 	name = srvoel10b
