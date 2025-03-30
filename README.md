@@ -263,7 +263,7 @@ up the dependecy if it's not already, and attraction() tells RAC that the resour
 the same node as this service. So, if the VIP is on node2, but you start the gitea service on node 1,
 RAC will restart the VIP and relocate it to the same node.
 
-Three are many other options, but documenting them all is beyond the scope of these instructions.
+Thete are many other options, but documenting them all is beyond the scope of these instructions.
 If you have requirements such as services avoiding services on the same node, etc, please consult
 the RAC/Grid documentation.
 
